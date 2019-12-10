@@ -20,6 +20,17 @@ struct Content {
     content: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Contents {
+    url: String,
+    content: Vec<String>,
+}
+#[derive(Serialize, Deserialize)]
+struct ContentResponse {
+    url: String,
+    elements: Option<i64>,
+}
+
 #[get("/work")]
 fn work(conn: DistReqsConn) -> JsonValue {
     let val : Option<String> = match conn.lpop("work_items") {
@@ -29,7 +40,7 @@ fn work(conn: DistReqsConn) -> JsonValue {
     json!({"url": val})
 }
 #[get("/work/<url>")]
-fn content_for_url(conn: DistReqsConn, url: String) -> JsonValue {
+fn content_for_url(conn: DistReqsConn, url: String) -> Json<Contents> {
     let content: Option<Vec<String>> = match conn.lrange(&url, 0, -1) {
         Ok(val) => val,
         Err(_err) => {
@@ -37,11 +48,11 @@ fn content_for_url(conn: DistReqsConn, url: String) -> JsonValue {
             None
         }
     };
-    json!({"url": url, "content": content})
+    Json(Contents {url: url, content: content.unwrap()})
 }
 
 #[post("/work", data = "<url>")]
-fn create_work(conn: DistReqsConn, url: String) -> JsonValue {
+fn create_work(conn: DistReqsConn, url: String) -> Json<ContentResponse> {
     let elements: Option<i64> = match conn.rpush("work_items", &url) {
         Ok(val) => val,
         Err(_err) => {
@@ -49,11 +60,12 @@ fn create_work(conn: DistReqsConn, url: String) -> JsonValue {
             None
         }
     };
-    json!({"url": url, "elements": elements})
+    Json(ContentResponse {url: url, elements: elements})
 }
 
 #[post("/work/content", data = "<content>")]
-fn content(conn: DistReqsConn, content: Json<Content>) -> JsonValue {
+fn content(conn: DistReqsConn, content: Json<Content>) -> Json<ContentResponse> {
+    let url = content.url.clone();
     let elements: Option<i64> = match conn.rpush(&content.url, &content.content) {
         Ok(val) => val,
         Err(_err) => {
@@ -61,7 +73,7 @@ fn content(conn: DistReqsConn, content: Json<Content>) -> JsonValue {
             None
         }
     };
-    json!({"url": content.url, "elements": elements})
+    Json(ContentResponse {url: url, elements: elements})
 }
 
 fn rocket() -> rocket::Rocket {
