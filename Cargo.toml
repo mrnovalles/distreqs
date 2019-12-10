@@ -1,0 +1,17 @@
+[package]
+name = "distreqs"
+version = "0.1.0"
+authors = ["Mariano Valles <mariano@tonsser.com>"]
+edition = "2018"
+
+[dependencies]
+rocket = "0.4.2"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+redis = "0.13.0"
+
+[dependencies.rocket_contrib]
+version = "0.4.2"
+default-features = false
+features = ["json", "databases", "redis_pool"]
